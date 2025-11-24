@@ -46,7 +46,7 @@ class BaseOpenAIClient(LLMClient):
     """
 
     # Class-level constants
-    MAX_RETRIES: ClassVar[int] = 2
+    MAX_RETRIES: ClassVar[int] = 5
 
     def __init__(
         self,
