@@ -79,6 +79,8 @@ try:
 except ImportError:
     HAS_SENTENCE_TRANSFORMERS = False
 
+from graphiti_core.llm_client.ollama_client import OllamaClient
+
 
 def _validate_api_key(provider_name: str, api_key: str | None, logger) -> str:
     """Validate API key is present.
