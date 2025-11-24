@@ -72,6 +72,14 @@ except ImportError:
     HAS_GROQ = False
 from utils.utils import create_azure_credential_token_provider
 
+try:
+    from services.sentence_transformers_embedder import SentenceTransformersEmbedder
+    HAS_SENTENCE_TRANSFORMERS = True
+except ImportError:
+    HAS_SENTENCE_TRANSFORMERS = False
+
+from services.ollama_client import OllamaClient
+
 
 def _validate_api_key(provider_name: str, api_key: str | None, logger) -> str:
     """Validate API key is present.
@@ -115,6 +123,7 @@ class LLMClientFactory:
                     raise ValueError('OpenAI provider configuration not found')
 
                 api_key = config.providers.openai.api_key
+                api_url = config.providers.openai.api_url
                 _validate_api_key('OpenAI', api_key, logger)
 
                 from graphiti_core.llm_client.config import LLMConfig as CoreLLMConfig
@@ -126,11 +135,12 @@ class LLMClientFactory:
                     or config.model.startswith('o3')
                 )
                 small_model = (
-                    'gpt-5-nano' if is_reasoning_model else 'gpt-4.1-mini'
-                )  # Use reasoning model for small tasks if main model is reasoning
+                    'gpt-5-nano' if is_reasoning_model else config.model
+                )  # Use same model for small tasks to ensure availability (especially for Ollama)
 
                 llm_config = CoreLLMConfig(
                     api_key=api_key,
+                    base_url=api_url,
                     model=config.model,
                     small_model=small_model,
                     temperature=config.temperature,
@@ -139,10 +149,10 @@ class LLMClientFactory:
 
                 # Only pass reasoning/verbosity parameters for reasoning models (gpt-5 family)
                 if is_reasoning_model:
-                    return OpenAIClient(config=llm_config, reasoning='minimal', verbosity='low')
+                    return OllamaClient(config=llm_config, reasoning='minimal', verbosity='low')
                 else:
                     # For non-reasoning models, explicitly pass None to disable these parameters
-                    return OpenAIClient(config=llm_config, reasoning=None, verbosity=None)
+                    return OllamaClient(config=llm_config, reasoning=None, verbosity=None)
 
             case 'azure_openai':
                 if not HAS_AZURE_LLM:
@@ -355,6 +365,14 @@ class EmbedderFactory:
                     embedding_dim=config.dimensions or 1024,
                 )
                 return VoyageAIEmbedder(config=voyage_config)
+
+            case 'sentence_transformers':
+                if not HAS_SENTENCE_TRANSFORMERS:
+                    raise ValueError(
+                        'Sentence Transformers embedder not available. Please install sentence-transformers.'
+                    )
+                
+                return SentenceTransformersEmbedder(model_name=config.model or 'all-MiniLM-L6-v2')
 
             case _:
                 raise ValueError(f'Unsupported Embedder provider: {provider}')

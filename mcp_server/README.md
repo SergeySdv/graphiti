@@ -175,6 +175,8 @@ database:
 
 To use Ollama with the MCP server, configure it as an OpenAI-compatible endpoint:
 
+For a detailed setup guide, including environment variable configuration and troubleshooting, please refer to [OLLAMA_SETUP.md](OLLAMA_SETUP.md).
+
 ```yaml
 llm:
   provider: "openai"

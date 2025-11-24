@@ -17,6 +17,7 @@ services:
       - FALKORDB_PASSWORD=${FALKORDB_PASSWORD:-}
       - BROWSER=${BROWSER:-1}  # Enable FalkorDB Browser UI (set to 0 to disable)
       # MCP Server configuration
+      - OPENAI_API_KEY=ollama  # Dummy key required for OpenAI client even with Ollama
       - FALKORDB_URI=redis://localhost:6379
       - FALKORDB_DATABASE=${FALKORDB_DATABASE:-default_db}
       - GRAPHITI_GROUP_ID=${GRAPHITI_GROUP_ID:-main}
@@ -26,6 +27,11 @@ services:
     volumes:
       - falkordb_data:/var/lib/falkordb/data
       - mcp_logs:/var/log/graphiti
+      # Mount local config for Ollama support
+      - ../config/config.yaml:/app/mcp/config/config.yaml:ro
+    extra_hosts:
+      # Allow access to host Ollama instance
+      - "host.docker.internal:host-gateway"
     ports:
       - "6379:6379"  # FalkorDB/Redis
       - "3000:3000"  # FalkorDB web UI

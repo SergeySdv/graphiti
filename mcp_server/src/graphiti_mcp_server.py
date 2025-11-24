@@ -35,6 +35,23 @@ from services.factories import DatabaseDriverFactory, EmbedderFactory, LLMClient
 from services.queue_service import QueueService
 from utils.formatting import format_fact_result
 
+# Monkeypatch FalkorDriver to handle tensors
+try:
+    from graphiti_core.driver.falkordb_driver import FalkorDriver
+    
+    _original_convert = FalkorDriver.convert_datetimes_to_strings
+    
+    @staticmethod
+    def _patched_convert(obj):
+        if hasattr(obj, 'tolist'):
+            return obj.tolist()
+        return _original_convert(obj)
+        
+    FalkorDriver.convert_datetimes_to_strings = _patched_convert
+    print("Patched FalkorDriver to handle tensors")
+except ImportError:
+    pass
+
 # Load .env file from mcp_server directory
 mcp_server_dir = Path(__file__).parent.parent
 env_file = mcp_server_dir / '.env'
@@ -147,6 +164,8 @@ API keys are provided for any language model operations.
 mcp = FastMCP(
     'Graphiti Agent Memory',
     instructions=GRAPHITI_MCP_INSTRUCTIONS,
+    json_response=True,
+    stateless_http=True,
 )
 
 # Global services

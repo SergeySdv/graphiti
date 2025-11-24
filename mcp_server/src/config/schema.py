@@ -133,6 +133,11 @@ class VoyageProviderConfig(BaseModel):
     model: str = 'voyage-3'
 
 
+class SentenceTransformersProviderConfig(BaseModel):
+    """Sentence Transformers provider configuration."""
+    pass
+
+
 class LLMProvidersConfig(BaseModel):
     """LLM providers configuration."""
 
@@ -162,6 +167,7 @@ class EmbedderProvidersConfig(BaseModel):
     azure_openai: AzureOpenAIProviderConfig | None = None
     gemini: GeminiProviderConfig | None = None
     voyage: VoyageProviderConfig | None = None
+    sentence_transformers: SentenceTransformersProviderConfig | None = None
 
 
 class EmbedderConfig(BaseModel):
