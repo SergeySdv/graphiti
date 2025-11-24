@@ -2,42 +2,42 @@
 
 from typing import Any
 
-from typing_extensions import TypedDict
+from pydantic import BaseModel
 
 
-class ErrorResponse(TypedDict):
+class ErrorResponse(BaseModel):
     error: str
 
 
-class SuccessResponse(TypedDict):
+class SuccessResponse(BaseModel):
     message: str
 
 
-class NodeResult(TypedDict):
+class NodeResult(BaseModel):
     uuid: str
     name: str
     labels: list[str]
-    created_at: str | None
-    summary: str | None
+    created_at: str | None = None
+    summary: str | None = None
     group_id: str
-    attributes: dict[str, Any]
+    attributes: dict[str, Any] = {}
 
 
-class NodeSearchResponse(TypedDict):
+class NodeSearchResponse(BaseModel):
     message: str
     nodes: list[NodeResult]
 
 
-class FactSearchResponse(TypedDict):
+class FactSearchResponse(BaseModel):
     message: str
     facts: list[dict[str, Any]]
 
 
-class EpisodeSearchResponse(TypedDict):
+class EpisodeSearchResponse(BaseModel):
     message: str
     episodes: list[dict[str, Any]]
 
 
-class StatusResponse(TypedDict):
+class StatusResponse(BaseModel):
     status: str
     message: str
