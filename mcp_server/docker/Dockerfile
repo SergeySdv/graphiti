@@ -36,19 +36,15 @@ WORKDIR /app/mcp
 ARG GRAPHITI_CORE_VERSION=0.23.1
 
 # Copy project files for dependency installation
-COPY pyproject.toml uv.lock ./
+COPY mcp_server/pyproject.toml mcp_server/uv.lock ./
 
-# Remove the local path override for graphiti-core in Docker builds
-# and regenerate lock file to match the PyPI version
-RUN sed -i '/\[tool\.uv\.sources\]/,/graphiti-core/d' pyproject.toml && \
-    if [ -n "${GRAPHITI_CORE_VERSION}" ]; then \
-      sed -i "s/graphiti-core\[falkordb\]>=[0-9]\+\.[0-9]\+\.[0-9]\+$/graphiti-core[falkordb]==${GRAPHITI_CORE_VERSION}/" pyproject.toml; \
-    fi && \
-    echo "Regenerating lock file for PyPI graphiti-core..." && \
-    rm -f uv.lock && \
-    uv lock
+# Copy local graphiti-core source
+COPY graphiti_core/ /app/graphiti_core/
+COPY pyproject.toml /app/pyproject.toml
+COPY README.md /app/README.md
 
 # Install Python dependencies (exclude dev dependency group)
+# Note: We are using the local graphiti-core which is defined in pyproject.toml's [tool.uv.sources]
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --no-group dev --extra providers
 
@@ -56,12 +52,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 RUN echo "${GRAPHITI_CORE_VERSION}" > /app/mcp/.graphiti-core-version
 
 # Copy MCP server application code
-COPY main.py ./
-COPY src/ ./src/
-COPY config/ ./config/
+COPY mcp_server/main.py ./
+COPY mcp_server/src/ ./src/
+COPY mcp_server/config/ ./config/
 
 # Copy FalkorDB combined config (uses localhost since both services in same container)
-COPY config/config-docker-falkordb-combined.yaml /app/mcp/config/config.yaml
+COPY mcp_server/config/config-docker-falkordb-combined.yaml /app/mcp/config/config.yaml
 
 # Create log and data directories
 RUN mkdir -p /var/log/graphiti /var/lib/falkordb/data
