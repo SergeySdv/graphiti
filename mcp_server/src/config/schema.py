@@ -135,6 +135,7 @@ class VoyageProviderConfig(BaseModel):
 
 class SentenceTransformersProviderConfig(BaseModel):
     """Sentence Transformers provider configuration."""
+
     pass
 
 

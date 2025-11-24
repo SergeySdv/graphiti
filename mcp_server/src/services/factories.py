@@ -18,7 +18,7 @@ except ImportError:
 
 # Kuzu support removed - FalkorDB is now the default
 from graphiti_core.embedder import EmbedderClient, OpenAIEmbedder
-from graphiti_core.llm_client import LLMClient, OpenAIClient
+from graphiti_core.llm_client import LLMClient, OllamaClient
 from graphiti_core.llm_client.config import LLMConfig as GraphitiLLMConfig
 
 # Try to import additional providers if available
@@ -73,12 +73,11 @@ except ImportError:
 from utils.utils import create_azure_credential_token_provider
 
 try:
-    from services.sentence_transformers_embedder import SentenceTransformersEmbedder
+    from graphiti_core.embedder.sentence_transformers import SentenceTransformersEmbedder
+
     HAS_SENTENCE_TRANSFORMERS = True
 except ImportError:
     HAS_SENTENCE_TRANSFORMERS = False
-
-from services.ollama_client import OllamaClient
 
 
 def _validate_api_key(provider_name: str, api_key: str | None, logger) -> str:
@@ -371,7 +370,7 @@ class EmbedderFactory:
                     raise ValueError(
                         'Sentence Transformers embedder not available. Please install sentence-transformers.'
                     )
-                
+
                 return SentenceTransformersEmbedder(model_name=config.model or 'all-MiniLM-L6-v2')
 
             case _:

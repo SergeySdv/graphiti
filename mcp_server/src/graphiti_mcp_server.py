@@ -38,17 +38,17 @@ from utils.formatting import format_fact_result
 # Monkeypatch FalkorDriver to handle tensors
 try:
     from graphiti_core.driver.falkordb_driver import FalkorDriver
-    
+
     _original_convert = FalkorDriver.convert_datetimes_to_strings
-    
+
     @staticmethod
     def _patched_convert(obj):
         if hasattr(obj, 'tolist'):
             return obj.tolist()
         return _original_convert(obj)
-        
+
     FalkorDriver.convert_datetimes_to_strings = _patched_convert
-    print("Patched FalkorDriver to handle tensors")
+    print('Patched FalkorDriver to handle tensors')
 except ImportError:
     pass
 
