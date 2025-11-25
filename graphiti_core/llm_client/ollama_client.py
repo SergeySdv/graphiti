@@ -53,6 +53,9 @@ class OllamaClient(OpenAIClient):
         try:
             json_schema = response_model.model_json_schema()
             
+            # Ollama expects `format` key in native API, but `response_format` in OpenAI API.
+            # The structure for OpenAI API `response_format` when using JSON schema is:
+            # { "type": "json_schema", "json_schema": { ... } }
             response_format = {
                 "type": "json_schema",
                 "json_schema": {
@@ -82,7 +85,8 @@ class OllamaClient(OpenAIClient):
         class MockResponse:
             def __init__(self, content: str | None):
                 self.output_text = content
-                
+                self.refusal = None # Initialize refusal to prevent AttributeError
+
         content = response.choices[0].message.content
         
         if not content:
@@ -90,7 +94,7 @@ class OllamaClient(OpenAIClient):
         
         # Post-processing for common schema mismatches & robustness
         try:
-            # Strip Markdown if present
+            # Strip Markdown if present (even with schema, some models chatter)
             if content.strip().startswith("```json"):
                 match = re.search(r"```json(.*?)```", content, re.DOTALL)
                 if match:
@@ -100,44 +104,13 @@ class OllamaClient(OpenAIClient):
                 if match:
                     content = match.group(1)
 
-            try:
-                data = json.loads(content)
-            except json.JSONDecodeError:
-                # Fallback: Try to repair truncated JSON
-                logger.warning(f"JSON decode failed. Attempting repair on content length {len(content)}")
-                
-                stripped_content = content.strip()
-                open_braces = stripped_content.count('{')
-                close_braces = stripped_content.count('}')
-                open_brackets = stripped_content.count('[')
-                close_brackets = stripped_content.count(']')
-                
-                repaired_content = stripped_content
-                if repaired_content.rstrip().endswith(','):
-                     repaired_content = repaired_content.rstrip()[:-1]
-
-                repaired_content += ']' * (open_brackets - close_brackets)
-                repaired_content += '}' * (open_braces - close_braces)
-                
-                try:
-                    data = json.loads(repaired_content)
-                    logger.info("Successfully repaired truncated JSON by closing braces/brackets.")
-                except json.JSONDecodeError:
-                    repaired_content_str = stripped_content + '"'
-                    repaired_content_str += ']' * (open_brackets - close_brackets)
-                    repaired_content_str += '}' * (open_braces - close_braces)
-                    
-                    try:
-                        data = json.loads(repaired_content_str)
-                        logger.info("Successfully repaired truncated JSON by closing string and braces.")
-                    except json.JSONDecodeError:
-                        logger.error("Failed to repair JSON.")
-                        raise
+            data = json.loads(content)
 
             # Fix 1: Clean keys (remove trailing colons)
             data = self._clean_keys(data)
             
             # Fix 2: 'entities' -> 'extracted_entities'
+            # Even with schema, models sometimes hallucinate the top level key if it's nested.
             if isinstance(data, dict) and 'entities' in data and 'extracted_entities' not in data and 'ExtractedEntities' in response_model.__name__:
                 logger.info("Patching response: renaming 'entities' to 'extracted_entities'")
                 data['extracted_entities'] = data.pop('entities')
